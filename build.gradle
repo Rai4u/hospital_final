@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id "org.akhikhl.gretty" version "2.0.0"
+    id 'war'
+}
+
+group 'shevchenko'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compileOnly 'org.projectlombok:lombok:1.18.2'
+    compile 'log4j:log4j:1.2.17'
+    compile 'commons-dbcp:commons-dbcp:1.4'
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.5'
+    compile 'org.aeonbits.owner:owner-java8:1.0.6'
+}
+
+gretty {
+    servletContainer = "tomcat8"
+}

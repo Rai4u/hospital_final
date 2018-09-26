@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-public class Patience extends User{
+public class Patient extends User{
     private LocalDate birthDay;
 
 }

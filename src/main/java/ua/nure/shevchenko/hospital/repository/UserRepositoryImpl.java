@@ -1,7 +1,9 @@
 package ua.nure.shevchenko.hospital.repository;
 
 import org.apache.log4j.Logger;
+import ua.nure.shevchenko.hospital.Context;
 import ua.nure.shevchenko.hospital.database.ConnectionPool;
+import ua.nure.shevchenko.hospital.database.TransactionManager;
 import ua.nure.shevchenko.hospital.model.Role;
 import ua.nure.shevchenko.hospital.model.User;
 
@@ -15,7 +17,7 @@ public class UserRepositoryImpl implements UserRepository {
     private static final String INSERT_USER = "INSERT INTO users(" +
             "user_name, user_surname, user_email, user_password, role_name) " +
             "VALUES (?, ?, ?, ?, ?)";
-
+    private TransactionManager txManager = Context.get(TransactionManager.class);
 
     @Override
     public Optional<User> find(User user) {
@@ -24,21 +26,23 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public boolean insert(User user) {
-        boolean check = false;
-        try (Connection conn = ConnectionPool.INSTANCE.getDataBaseConnection();
-             PreparedStatement statement = conn.prepareStatement(INSERT_USER)) {
+    public int insert(User user) throws SQLException {
+        int userId = -1;
+        Connection connection = txManager.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_USER, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, user.getName());
             statement.setString(2, user.getSurname());
             statement.setString(3, user.getEmail());
             statement.setString(4, user.getPassword());
             statement.setString(5, user.getRole().name());
-            check = statement.executeUpdate() != 0;
-            return check;
-        } catch (SQLException ex) {
-            LOGGER.error("Error in insert user sql: " + ex.getMessage());
+            closeConnection(connection);
+
+            ResultSet keys = statement.getGeneratedKeys();
+            if(keys.next()){
+                userId = keys.getInt(1);
+            }
+            return userId;
         }
-        return check;
     }
 
     @Override
@@ -57,7 +61,7 @@ public class UserRepositoryImpl implements UserRepository {
     private List<User> searchUsers(String sql){
         List<User> list = new ArrayList<>();
 
-        try (Connection conn = ConnectionPool.INSTANCE.getDataBaseConnection();
+        try (Connection conn = txManager.getConnection();
              Statement statement = conn.createStatement();
              ResultSet set = statement.executeQuery(sql)){
             while(set.next()){
@@ -72,7 +76,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     private Optional<User> get(String sql){
         Optional<User> optional = Optional.empty();
-        try (Connection conn = ConnectionPool.INSTANCE.getDataBaseConnection();
+        try (Connection conn = txManager.getConnection();
              Statement statement = conn.createStatement();
              ResultSet set = statement.executeQuery(sql)) {
 
@@ -100,4 +104,13 @@ public class UserRepositoryImpl implements UserRepository {
         return user;
     }
 
+    private void closeConnection(Connection connection){
+        try {
+            if(connection.getAutoCommit()){
+                connection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserRepository {
     Optional<User> find(User user);
-    boolean insert(User user);
+    int insert(User user) throws SQLException;
     Optional<User> getBy(String email);
     List<User> getBy(String name, String surname);
 }

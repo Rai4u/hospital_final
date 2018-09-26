@@ -1,7 +1,8 @@
 package ua.nure.shevchenko.hospital.repository;
 
 import org.apache.log4j.Logger;
-import ua.nure.shevchenko.hospital.database.ConnectionPool;
+import ua.nure.shevchenko.hospital.Context;
+import ua.nure.shevchenko.hospital.database.TransactionManager;
 import ua.nure.shevchenko.hospital.model.*;
 
 import java.sql.*;
@@ -13,52 +14,40 @@ public class DoctorRepositoryImpl implements DoctorRepository {
     private static final String INSERT_DOCTOR = "INSERT INTO doctor(" +
             "user_id, patiencecount, job_name) " +
             "VALUES (?, ?, ?);";
+    private TransactionManager txManager = Context.get(TransactionManager.class);
 
     @Override
-    public List<Doctor> getAllDoctors() {
+    public List<Doctor> getAllDoctors() throws SQLException {
         String sql = "Select user_name, user_surname, user_email, user_password, " +
                 "role_name, patiencecount, job_name " +
                 "From users, doctor where users.user_id = doctor.user_id;";
-        return searchDoctors(sql);
-    }
-
-    @Override
-    public boolean insert(Doctor doctor) {
-        boolean check = false;
-        try (Connection conn = ConnectionPool.INSTANCE.getDataBaseConnection();
-             PreparedStatement statement = conn.prepareStatement(INSERT_DOCTOR)) {
-            statement.setInt(1, doctor.getUserId());
-            statement.setInt(2, doctor.getPatienceCount());
-            statement.setString(3, doctor.getJob().name());
-            check = statement.executeUpdate() != 0;
-            return check;
-        } catch (SQLException ex) {
-            LOGGER.error("Error in insert doctor sql: " + ex.getMessage());
-        }
-        return check;
-    }
-
-    @Override
-    public List<Patience> getPatients() {
-        return null;
-    }
-
-
-    //My functions
-    private List<Doctor> searchDoctors(String sql) {
         List<Doctor> list = new ArrayList<>();
+        Connection conn = txManager.getConnection();
 
-        try (Connection conn = ConnectionPool.INSTANCE.getDataBaseConnection();
-             Statement statement = conn.createStatement();
+        try (Statement statement = conn.createStatement();
              ResultSet set = statement.executeQuery(sql)) {
             while (set.next()) {
                 list.add(fillDoctorData(set));
             }
-        } catch (SQLException readData) {
-            LOGGER.error("Error in searchDoctor sql: " + readData.getMessage());
+        } finally {
+            closeConnection(conn);
         }
 
         return list;
+    }
+
+    @Override
+    public boolean insert(Doctor doctor) throws SQLException {
+        Connection conn = txManager.getConnection();
+        try (PreparedStatement statement = conn.prepareStatement(INSERT_DOCTOR)) {
+            statement.setInt(1, doctor.getUserId());
+            statement.setInt(2, doctor.getPatienceCount());
+            statement.setString(3, doctor.getJob().name());
+
+            return statement.executeUpdate() != 0;
+        } finally {
+            closeConnection(conn);
+        }
     }
 
     private Doctor fillDoctorData(ResultSet data) throws SQLException {
@@ -71,5 +60,15 @@ public class DoctorRepositoryImpl implements DoctorRepository {
         doctor.setPatienceCount(data.getInt(6));
         doctor.setJob(Job.valueOf(data.getString(7)));
         return doctor;
+    }
+
+    private void closeConnection(Connection connection){
+        try {
+            if(connection.getAutoCommit()){
+                connection.close();
+            }
+        } catch (SQLException e) {
+            LOGGER.error(e);
+        }
     }
 }
