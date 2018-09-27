@@ -3,7 +3,9 @@ package ua.nure.shevchenko.hospital.repository;
 import org.apache.log4j.Logger;
 import ua.nure.shevchenko.hospital.Context;
 import ua.nure.shevchenko.hospital.database.TransactionManager;
-import ua.nure.shevchenko.hospital.model.*;
+import ua.nure.shevchenko.hospital.model.Doctor;
+import ua.nure.shevchenko.hospital.model.Job;
+import ua.nure.shevchenko.hospital.model.Role;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -29,20 +31,24 @@ public class DoctorRepositoryImpl implements DoctorRepository {
             while (set.next()) {
                 list.add(fillDoctorData(set));
             }
+            return list;
         } finally {
             closeConnection(conn);
         }
-
-        return list;
     }
 
     @Override
     public boolean insert(Doctor doctor) throws SQLException {
         Connection conn = txManager.getConnection();
-        try (PreparedStatement statement = conn.prepareStatement(INSERT_DOCTOR)) {
+        try (PreparedStatement statement = conn.prepareStatement(INSERT_DOCTOR, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, doctor.getUserId());
             statement.setInt(2, doctor.getPatienceCount());
             statement.setString(3, doctor.getJob().name());
+
+            ResultSet keys = statement.getGeneratedKeys();
+            if (keys.next()) {
+                doctor.setDoctorId(keys.getInt(1));
+            }
 
             return statement.executeUpdate() != 0;
         } finally {
@@ -62,9 +68,9 @@ public class DoctorRepositoryImpl implements DoctorRepository {
         return doctor;
     }
 
-    private void closeConnection(Connection connection){
+    private void closeConnection(Connection connection) {
         try {
-            if(connection.getAutoCommit()){
+            if (connection.getAutoCommit()) {
                 connection.close();
             }
         } catch (SQLException e) {

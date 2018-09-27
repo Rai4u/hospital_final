@@ -1,4 +1,4 @@
-package ua.nure.shevchenko.hospital.service;
+package ua.nure.shevchenko.hospital.service.implement;
 
 import org.apache.log4j.Logger;
 import ua.nure.shevchenko.hospital.Context;
@@ -7,8 +7,9 @@ import ua.nure.shevchenko.hospital.model.Doctor;
 import ua.nure.shevchenko.hospital.model.Patient;
 import ua.nure.shevchenko.hospital.model.User;
 import ua.nure.shevchenko.hospital.repository.DoctorRepository;
-import ua.nure.shevchenko.hospital.repository.PatienceRepository;
+import ua.nure.shevchenko.hospital.repository.PatientRepository;
 import ua.nure.shevchenko.hospital.repository.UserRepository;
+import ua.nure.shevchenko.hospital.service.UserService;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -19,7 +20,7 @@ public class UserServiceImpl implements UserService {
     private static final Logger LOGGER = Logger.getLogger(UserServiceImpl.class);
     private UserRepository userRepository;
     private DoctorRepository doctorRepository;
-    private PatienceRepository patienceRepository;
+    private PatientRepository patienceRepository;
     private TransactionManager txManager;
 
     public UserServiceImpl() {
@@ -58,42 +59,10 @@ public class UserServiceImpl implements UserService {
         return userRepository.getBy(name, surname);
     }
 
-    @Override
-    public List<Patient> getAllPatience() {
-        return patienceRepository.getAllPatients();
-    }
 
-    @Override
-    public List<Doctor> getAllDoctor() {
-        try {
-            return doctorRepository.getAllDoctors();
-        } catch (SQLException e) {
-            LOGGER.error("during doctors in DB: ", e);
-        }
-        return Collections.emptyList();
-    }
 
-    @Override
-    public boolean addDoctor(Doctor doctor) {
-        boolean insert = false;
-        try {
-            txManager.beginTransaction();
-            Optional<User> user = findUser(doctor);
-            if (user.isPresent()) {
-                doctor.setUserId(user.get().getUserId());
-            } else {
-                int userId = userRepository.insert(doctor);
-                doctor.setUserId(userId);
-            }
-            insert = doctorRepository.insert(doctor);
-            LOGGER.info("Added new doctor");
-            txManager.commit();
-        } catch (SQLException e) {
-            LOGGER.error("doctor doesn`t insert:", e);
-            txManager.rollback();
-        }
-        return insert;
-    }
+
+
 
 
 }

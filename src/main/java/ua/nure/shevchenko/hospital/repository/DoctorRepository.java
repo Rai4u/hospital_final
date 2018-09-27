@@ -8,5 +8,4 @@ import java.util.List;
 public interface DoctorRepository {
     List<Doctor> getAllDoctors() throws SQLException;
     boolean insert(Doctor doctor) throws SQLException;
-
 }

@@ -1,12 +1,11 @@
-package ua.nure.shevchenko.hospital.repository;
+package ua.nure.shevchenko.hospital.service;
 
 import ua.nure.shevchenko.hospital.model.Doctor;
 import ua.nure.shevchenko.hospital.model.Patient;
 
 import java.util.List;
 
-public interface PatienceRepository {
-    List<Patient> getAllPatients();
+public interface PatientService {
     List<Patient> getPatients(Doctor doctor);
-
+    List<Patient> getAllPatients();
 }

@@ -2,7 +2,6 @@ package ua.nure.shevchenko.hospital.repository;
 
 import org.apache.log4j.Logger;
 import ua.nure.shevchenko.hospital.Context;
-import ua.nure.shevchenko.hospital.database.ConnectionPool;
 import ua.nure.shevchenko.hospital.database.TransactionManager;
 import ua.nure.shevchenko.hospital.model.Role;
 import ua.nure.shevchenko.hospital.model.User;
@@ -29,19 +28,22 @@ public class UserRepositoryImpl implements UserRepository {
     public int insert(User user) throws SQLException {
         int userId = -1;
         Connection connection = txManager.getConnection();
+
         try (PreparedStatement statement = connection.prepareStatement(INSERT_USER, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, user.getName());
             statement.setString(2, user.getSurname());
             statement.setString(3, user.getEmail());
             statement.setString(4, user.getPassword());
             statement.setString(5, user.getRole().name());
-            closeConnection(connection);
+
 
             ResultSet keys = statement.getGeneratedKeys();
-            if(keys.next()){
+            if (keys.next()) {
                 userId = keys.getInt(1);
             }
             return userId;
+        } finally {
+            closeConnection(connection);
         }
     }
 
@@ -54,27 +56,27 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public List<User> getBy(String name, String surname) {
         String sql = "Select * from users where user_name ='" + name + "' AND user_surname='" + surname + "';";
-        return  searchUsers(sql);
+        return searchUsers(sql);
     }
 
 
-    private List<User> searchUsers(String sql){
+    private List<User> searchUsers(String sql) {
         List<User> list = new ArrayList<>();
 
         try (Connection conn = txManager.getConnection();
              Statement statement = conn.createStatement();
-             ResultSet set = statement.executeQuery(sql)){
-            while(set.next()){
+             ResultSet set = statement.executeQuery(sql)) {
+            while (set.next()) {
                 list.add(fillUserData(set));
             }
-        } catch (SQLException readData){
+        } catch (SQLException readData) {
             LOGGER.error("Error in searchUser sql: " + readData.getMessage());
         }
 
         return list;
     }
 
-    private Optional<User> get(String sql){
+    private Optional<User> get(String sql) {
         Optional<User> optional = Optional.empty();
         try (Connection conn = txManager.getConnection();
              Statement statement = conn.createStatement();
@@ -104,9 +106,9 @@ public class UserRepositoryImpl implements UserRepository {
         return user;
     }
 
-    private void closeConnection(Connection connection){
+    private void closeConnection(Connection connection) {
         try {
-            if(connection.getAutoCommit()){
+            if (connection.getAutoCommit()) {
                 connection.close();
             }
         } catch (SQLException e) {

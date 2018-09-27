@@ -10,5 +10,4 @@ import java.time.LocalDate;
 public class HospitalCard {
     private int cardId;
     private LocalDate openingDate;
-
 }

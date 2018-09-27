@@ -14,7 +14,4 @@ public interface UserService {
     Optional<User> getBy(String email);
     List<User> getBy(String name, String surname);
 
-    List<Patient> getAllPatience();
-    List<Doctor> getAllDoctor();
-    boolean addDoctor(Doctor doctor);
 }
